@@ -7,7 +7,8 @@ This document provides detailed instructions on how to run the Localization4 too
 1. Python 3.8 or higher
 2. Google Chrome browser
 3. Valid Guesty PMS credentials
-4. Nova Act Lite API key
+4. AWS account with access to Amazon Comprehend service
+5. Proper IAM permissions for AWS Comprehend API access
 
 ## Setup Steps
 
@@ -22,9 +23,15 @@ cd Localization4
 pip install -r requirements.txt
 ```
 
-3. Add your Nova Act Lite API key:
+3. Configure your AWS credentials:
    - Open API_KEYS.md
-   - Replace the placeholder with your actual API key
+   - Verify that your AWS credentials are correctly entered:
+   ```
+   AWS_ACCESS_KEY_ID=your_access_key_id
+   AWS_SECRET_ACCESS_KEY=your_secret_access_key
+   AWS_REGION=your_aws_region
+   ```
+   - Ensure the IAM user has permissions for `comprehend:BatchDetectDominantLanguage`
 
 4. Configure the URLs to scan:
    - Edit config/urls.txt
@@ -49,10 +56,16 @@ python src/main.py
 5. The tool will:
    - Navigate through each URL in the configuration file
    - Interact with UI elements as specified
-   - Analyze each page for localization gaps using Nova Act Lite
+   - Analyze each page for localization gaps using AWS Comprehend
    - Generate HTML and CSV reports
 
 6. When the process is complete, the HTML report will open automatically in your default browser.
+
+## AWS Comprehend Details
+
+The tool uses AWS Comprehend to detect the dominant language of text elements on web pages. When a text element is detected as English in a French UI context, it's flagged as a localization gap.
+
+If AWS Comprehend is unavailable or encounters an error, the tool will automatically fall back to using heuristic detection methods.
 
 ## Interpreting the Reports
 
@@ -67,7 +80,26 @@ The reports contain:
 If the tool fails to navigate or analyze a page:
 1. Check that the URLs and UI element identifiers are correct
 2. Ensure your Guesty PMS credentials are valid
-3. Verify that your Nova Act Lite API key is correctly configured
+3. Verify that your AWS credentials are correct and have the necessary permissions
+4. Check the AWS service quotas and limits for Comprehend
+
+## AWS Permission Requirements
+
+The IAM user needs the following permissions:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "comprehend:BatchDetectDominantLanguage"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
 
 ## Support
 

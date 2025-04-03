@@ -8,6 +8,7 @@ This module loads the URLs and configurations from the config file.
 """
 
 import os
+import re
 from typing import List, Dict, Any
 
 
@@ -60,32 +61,47 @@ def load_urls(config_file: str) -> List[Dict[str, Any]]:
     return urls
 
 
-def load_api_key(key_file: str = 'API_KEYS.md') -> str:
+def load_aws_credentials(key_file: str = 'API_KEYS.md') -> Dict[str, str]:
     """
-    Load the Nova Act Lite API key from the API_KEYS.md file.
+    Load AWS credentials from the API_KEYS.md file for Nova Act Lite.
     
     Args:
         key_file (str): Path to the API keys file.
         
     Returns:
-        str: The Nova Act Lite API key.
+        Dict[str, str]: The AWS credentials.
         
     Raises:
         FileNotFoundError: If the API keys file does not exist.
-        ValueError: If the API key is not found in the file.
+        ValueError: If required AWS credentials are not found in the file.
     """
     # Check if the API keys file exists
     if not os.path.exists(key_file):
         raise FileNotFoundError(f"API keys file not found: {key_file}")
     
+    # AWS credential keys we need to find
+    required_keys = [
+        'AWS_ACCESS_KEY_ID',
+        'AWS_SECRET_ACCESS_KEY',
+        'AWS_REGION'
+    ]
+    
+    # Dictionary to store the found credentials
+    aws_credentials = {}
+    
     # Read the API keys file
     with open(key_file, 'r') as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith('NOVA_ACT_API_KEY='):
-                api_key = line.split('=', 1)[1].strip()
-                if api_key and api_key != 'your_nova_act_api_key_here':
-                    return api_key
+        content = f.read()
+        
+        # Look for each credential in the file
+        for key in required_keys:
+            match = re.search(f"{key}=([^\n]+)", content)
+            if match:
+                aws_credentials[key] = match.group(1).strip()
     
-    # If we get here, the API key was not found
-    raise ValueError("Nova Act Lite API key not found in the API keys file.") 
+    # Check if all required credentials were found
+    missing_keys = [key for key in required_keys if key not in aws_credentials]
+    if missing_keys:
+        raise ValueError(f"Missing AWS credentials in the API keys file: {', '.join(missing_keys)}")
+    
+    return aws_credentials 
