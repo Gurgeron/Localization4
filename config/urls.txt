@@ -1,0 +1,5 @@
+https://app.guesty.com/dashboard|Dashboard|.dashboard-settings-button
+https://app.guesty.com/reservations|Reservations|.reservations-filter-button
+https://app.guesty.com/listings|Listings|.listing-details-button
+https://app.guesty.com/inbox|Inbox|.message-compose-button
+https://app.guesty.com/calendar|Calendar|.calendar-view-options 
