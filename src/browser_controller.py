@@ -19,7 +19,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.chrome.service import ChromeService
 
 
 class BrowserController:
@@ -34,25 +33,34 @@ class BrowserController:
         Args:
             headless (bool): Whether to run in headless mode.
         """
-        # Check Chrome installation on macOS
+        # Check Chrome/Chromium installation on macOS
         if platform.system() == 'Darwin':
-            chrome_paths = [
+            browser_paths = [
+                # Chrome paths
                 '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
                 '/Applications/Google Chrome.app',
                 '~/Applications/Google Chrome.app',
+                # Chromium paths
+                '/Applications/Chromium.app/Contents/MacOS/Chromium',
+                '/Applications/Chromium.app',
+                '~/Applications/Chromium.app',
             ]
             
-            # Try to find Chrome
-            chrome_found = False
-            for path in chrome_paths:
+            # Try to find Chrome or Chromium
+            browser_found = False
+            browser_path = None
+            for path in browser_paths:
                 expanded_path = os.path.expanduser(path)
                 if os.path.exists(expanded_path):
-                    print(f"Found Chrome at: {expanded_path}")
-                    chrome_found = True
+                    print(f"Found browser at: {expanded_path}")
+                    browser_found = True
+                    browser_path = expanded_path
                     break
             
-            if not chrome_found:
-                print("Warning: Chrome not found in standard locations, browser automation may fail")
+            if not browser_found:
+                print("Warning: Neither Chrome nor Chromium found in standard locations, browser automation may fail")
+            else:
+                print(f"Using browser at: {browser_path}")
 
         # Set up Chrome options
         chrome_options = Options()
@@ -64,11 +72,25 @@ class BrowserController:
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--no-sandbox")
         
-        # Initialize the Chrome driver with the built-in service
+        # Add option to use Chromium if Chrome is not available
+        if platform.system() == 'Darwin' and browser_found and 'Chromium' in browser_path:
+            chrome_options.binary_location = browser_path
+            print("Configured to use Chromium binary")
+        
+        # Try to use our manually downloaded ChromeDriver first
         try:
-            # Let Selenium handle locating ChromeDriver
-            service = ChromeService()
-            self.driver = webdriver.Chrome(service=service, options=chrome_options)
+            # Check if we have a manually downloaded ChromeDriver
+            driver_path = os.path.abspath("drivers/chromedriver-mac-arm64/chromedriver")
+            if os.path.exists(driver_path):
+                print(f"Using manually downloaded ChromeDriver at: {driver_path}")
+                service = Service(executable_path=driver_path)
+                self.driver = webdriver.Chrome(service=service, options=chrome_options)
+            else:
+                # Fall back to letting Selenium find the driver
+                print("No manually downloaded ChromeDriver found, letting Selenium find a driver")
+                service = Service()
+                self.driver = webdriver.Chrome(service=service, options=chrome_options)
+                
             self.driver.maximize_window()
             
             # Set default timeouts
@@ -80,22 +102,26 @@ class BrowserController:
             print(f"Error initializing Chrome driver: {str(e)}")
             print(f"Platform: {platform.system()}, Machine: {platform.machine()}")
             
-            # Check if Chrome is installed on macOS
+            # Check if Chrome or Chromium is installed on macOS
             if platform.system() == 'Darwin':
                 try:
+                    # Check for Chrome
                     result = subprocess.run(['which', 'google-chrome'], capture_output=True, text=True)
                     if result.stdout:
                         print(f"Google Chrome found at: {result.stdout.strip()}")
                     else:
                         print("Google Chrome not found in PATH")
-                        
-                    result = subprocess.run(['which', 'chrome'], capture_output=True, text=True)
+                    
+                    # Check for Chromium    
+                    result = subprocess.run(['which', 'chromium'], capture_output=True, text=True)
                     if result.stdout:
-                        print(f"Chrome found at: {result.stdout.strip()}")
+                        print(f"Chromium found at: {result.stdout.strip()}")
+                    else:
+                        print("Chromium not found in PATH")
                         
-                    print("Please make sure Chrome is installed and accessible")
+                    print("Please make sure Chrome or Chromium is installed and accessible")
                 except Exception as e:
-                    print(f"Error checking Chrome installation: {e}")
+                    print(f"Error checking browser installation: {e}")
             
             raise
     
