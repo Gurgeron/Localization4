@@ -1,1 +1,1 @@
-https://app.guesty.com/price-optimizer/all|Price Optimizer|.pricing-table-container 
+https://app.guesty.com/inbox-v2/66f3b45ea9d1200012fce075/listing|Inbox|.message-container
