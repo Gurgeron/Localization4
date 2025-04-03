@@ -19,7 +19,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import ChromeService
 
 
 class BrowserController:
@@ -34,32 +34,40 @@ class BrowserController:
         Args:
             headless (bool): Whether to run in headless mode.
         """
+        # Check Chrome installation on macOS
+        if platform.system() == 'Darwin':
+            chrome_paths = [
+                '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+                '/Applications/Google Chrome.app',
+                '~/Applications/Google Chrome.app',
+            ]
+            
+            # Try to find Chrome
+            chrome_found = False
+            for path in chrome_paths:
+                expanded_path = os.path.expanduser(path)
+                if os.path.exists(expanded_path):
+                    print(f"Found Chrome at: {expanded_path}")
+                    chrome_found = True
+                    break
+            
+            if not chrome_found:
+                print("Warning: Chrome not found in standard locations, browser automation may fail")
+
         # Set up Chrome options
         chrome_options = Options()
         if headless:
-            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--headless=new")  # Use the new headless mode
         chrome_options.add_argument("--window-size=1920,1080")
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--no-sandbox")
         
-        # Initialize the Chrome driver with platform-specific settings
+        # Initialize the Chrome driver with the built-in service
         try:
-            # Download the driver first
-            driver_path = ChromeDriverManager().install()
-            
-            # Handle permission issues on macOS
-            if platform.system() == 'Darwin':
-                # Ensure the ChromeDriver is executable
-                try:
-                    subprocess.run(['chmod', '+x', driver_path], check=True)
-                    print(f"Fixed permissions for ChromeDriver at: {driver_path}")
-                except subprocess.SubprocessError as e:
-                    print(f"Warning: Could not set executable permissions: {e}")
-            
-            # Initialize the driver
-            service = Service(driver_path)
+            # Let Selenium handle locating ChromeDriver
+            service = ChromeService()
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
             self.driver.maximize_window()
             
@@ -71,6 +79,24 @@ class BrowserController:
             # More detailed error reporting
             print(f"Error initializing Chrome driver: {str(e)}")
             print(f"Platform: {platform.system()}, Machine: {platform.machine()}")
+            
+            # Check if Chrome is installed on macOS
+            if platform.system() == 'Darwin':
+                try:
+                    result = subprocess.run(['which', 'google-chrome'], capture_output=True, text=True)
+                    if result.stdout:
+                        print(f"Google Chrome found at: {result.stdout.strip()}")
+                    else:
+                        print("Google Chrome not found in PATH")
+                        
+                    result = subprocess.run(['which', 'chrome'], capture_output=True, text=True)
+                    if result.stdout:
+                        print(f"Chrome found at: {result.stdout.strip()}")
+                        
+                    print("Please make sure Chrome is installed and accessible")
+                except Exception as e:
+                    print(f"Error checking Chrome installation: {e}")
+            
             raise
     
     def navigate_to(self, url: str) -> None:
