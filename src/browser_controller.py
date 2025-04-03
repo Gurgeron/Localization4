@@ -7,7 +7,10 @@ Browser Controller Module for Localization4
 This module handles browser automation using Selenium.
 """
 
+import os
 import time
+import platform
+import subprocess
 from typing import Optional
 
 from selenium import webdriver
@@ -41,14 +44,34 @@ class BrowserController:
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--no-sandbox")
         
-        # Initialize the Chrome driver
-        service = Service(ChromeDriverManager().install())
-        self.driver = webdriver.Chrome(service=service, options=chrome_options)
-        self.driver.maximize_window()
-        
-        # Set default timeouts
-        self.driver.implicitly_wait(10)
-        self.wait = WebDriverWait(self.driver, 10)
+        # Initialize the Chrome driver with platform-specific settings
+        try:
+            # Download the driver first
+            driver_path = ChromeDriverManager().install()
+            
+            # Handle permission issues on macOS
+            if platform.system() == 'Darwin':
+                # Ensure the ChromeDriver is executable
+                try:
+                    subprocess.run(['chmod', '+x', driver_path], check=True)
+                    print(f"Fixed permissions for ChromeDriver at: {driver_path}")
+                except subprocess.SubprocessError as e:
+                    print(f"Warning: Could not set executable permissions: {e}")
+            
+            # Initialize the driver
+            service = Service(driver_path)
+            self.driver = webdriver.Chrome(service=service, options=chrome_options)
+            self.driver.maximize_window()
+            
+            # Set default timeouts
+            self.driver.implicitly_wait(10)
+            self.wait = WebDriverWait(self.driver, 10)
+            
+        except Exception as e:
+            # More detailed error reporting
+            print(f"Error initializing Chrome driver: {str(e)}")
+            print(f"Platform: {platform.system()}, Machine: {platform.machine()}")
+            raise
     
     def navigate_to(self, url: str) -> None:
         """

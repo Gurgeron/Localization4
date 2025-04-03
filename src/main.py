@@ -60,6 +60,11 @@ def main():
         print(f"{Fore.GREEN}✓ Browser controller initialized.{Style.RESET_ALL}")
     except Exception as e:
         print(f"{Fore.RED}Error initializing browser controller: {str(e)}{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Troubleshooting tips:{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}1. Make sure Chrome is installed{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}2. Try running 'python3 -m pip install webdriver-manager --upgrade'{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}3. If on macOS, ensure Xcode command line tools are installed{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}4. Check if you have the correct permissions to execute the ChromeDriver{Style.RESET_ALL}")
         sys.exit(1)
     
     # Initialize the Nova Act Lite analyzer
